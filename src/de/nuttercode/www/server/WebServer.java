@@ -9,7 +9,6 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -27,14 +26,8 @@ public abstract class WebServer implements Closeable {
 	final static String CRLF = "\r\n";
 	final static String HTTP_VERSION = "HTTP/1.1";
 	final static String UTF_8 = "UTF-8";
-	protected static final int SC_NOT_FOUND = 404;
-	protected static final String SR_NOT_FOUND = "not found";
-	private static final int SC_INTERNAL_SERVER_ERROR = 500;
-	private static final String SR_INTERNAL_ERROR = "internal server error";
 	private final static int DEFAULT_SOCKET_TIMEOUT = 5_000;
 	private static final String HF_HOST = "Host";
-	private static final int SC_BAD_REQUEST = 400;
-	private static final String SR_BAD_REQUEST = "bad request";
 
 	public static void run(WebServer server) throws FileNotFoundException, IOException {
 		server.init();
@@ -77,7 +70,7 @@ public abstract class WebServer implements Closeable {
 			if (slashPosition != -1) {
 				WebModule module = findModule(reducedUri);
 				if (module == null) {
-					response = getNotFoundResponse(request);
+					response = WebResponse.from(ResponseCode.NOT_FOUND);
 				} else {
 					try (Socket forwardSocket = new Socket(InetAddress.getByName(module.getHostname()),
 							module.getPort())) {
@@ -87,7 +80,7 @@ public abstract class WebServer implements Closeable {
 						response = forwardRequest.sendTo(forwardSocket.getOutputStream(),
 								forwardSocket.getInputStream());
 					} catch (IOException e) {
-						response = getInternalServerErrorResponse(request);
+						response = WebResponse.from(ResponseCode.INTERNAL_SERVER_ERROR);
 						if (verbose)
 							log(e);
 					}
@@ -96,7 +89,7 @@ public abstract class WebServer implements Closeable {
 				response = handleRequest(request);
 			}
 			if (response == null)
-				response = getInternalServerErrorResponse(request);
+				response = WebResponse.from(ResponseCode.INTERNAL_SERVER_ERROR);
 			response.setHeaderField(HF_HOST, getHostname());
 			response.sendTo(socket.getOutputStream());
 		} catch (Exception e) {
@@ -213,41 +206,6 @@ public abstract class WebServer implements Closeable {
 	}
 
 	protected abstract WebResponse handleRequest(WebRequest request);
-
-	protected WebResponse getNotFoundResponse(WebRequest request) {
-		WebResponse response = new WebResponse(SC_NOT_FOUND, SR_NOT_FOUND);
-		try {
-			response.setBody(
-					"<html><h1>NOT FOUND</h1><p>The requested URI " + request.getUri() + " was not found.</p></html>");
-		} catch (UnsupportedEncodingException e) {
-			if (verbose)
-				log(e);
-		}
-		return response;
-	}
-
-	protected WebResponse getInternalServerErrorResponse(WebRequest request) {
-		WebResponse response = new WebResponse(SC_INTERNAL_SERVER_ERROR, SR_INTERNAL_ERROR);
-		try {
-			response.setBody(
-					"<html><h1>INTERNAL SERVER ERROR</h1><p>The server encountered an unexpected internal error.</p></html>");
-		} catch (UnsupportedEncodingException e) {
-			if (verbose)
-				log(e);
-		}
-		return response;
-	}
-
-	protected WebResponse getBadRequestResponse(WebRequest request) {
-		WebResponse response = new WebResponse(SC_BAD_REQUEST, SR_BAD_REQUEST);
-		try {
-			response.setBody("<html><h1>BAD REQUEST</h1></html>");
-		} catch (UnsupportedEncodingException e) {
-			if (verbose)
-				log(e);
-		}
-		return response;
-	}
 
 	public void start() throws UnknownHostException, IOException {
 		listenerThread.start();

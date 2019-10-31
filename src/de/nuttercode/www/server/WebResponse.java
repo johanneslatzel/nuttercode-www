@@ -18,6 +18,16 @@ import de.nuttercode.util.assurance.NotNull;
 
 public class WebResponse extends WebObject {
 
+	public static WebResponse from(ResponseCode code) {
+		WebResponse response = new WebResponse(code.getCode(), code.getMessage());
+		try {
+			response.setBody("<html><h1>" + code.getMessage() + "</h1></html>");
+		} catch (UnsupportedEncodingException e) {
+			throw new IllegalStateException(e);
+		}
+		return response;
+	}
+
 	private static final String DEFAULT_STATUS_REASON = "OK";
 	private static final int DEFAULT_STATUS_CODE = 200;
 	private static final String HF_EXPIRES = "Expires";
