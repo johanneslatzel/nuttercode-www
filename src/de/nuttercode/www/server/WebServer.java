@@ -27,7 +27,7 @@ public abstract class WebServer implements Closeable {
 	final static String HTTP_VERSION = "HTTP/1.1";
 	final static String UTF_8 = "UTF-8";
 	private final static int DEFAULT_SOCKET_TIMEOUT = 5_000;
-	private static final String HF_HOST = "Host";
+	protected static final String HF_HOST = "Host";
 
 	public static void run(WebServer server) throws FileNotFoundException, IOException {
 		server.init();

@@ -21,7 +21,7 @@ public class WebRequest extends WebObject {
 	private final Map<String, String> parameterMap;
 
 	public WebRequest() {
-		this("");
+		this("/");
 	}
 
 	public WebRequest(String uri) {
@@ -106,6 +106,7 @@ public class WebRequest extends WebObject {
 	}
 
 	public WebResponse sendTo(Socket socket) throws ProtocolException, IOException {
+		setHeaderField(WebServer.HF_HOST, socket.getInetAddress().getHostName());
 		return sendTo(socket.getOutputStream(), socket.getInputStream());
 	}
 
