@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.OutputStream;
 import java.net.ProtocolException;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -19,6 +20,16 @@ public class WebRequest extends WebObject {
 	private String uri;
 	private final Map<String, String> parameterMap;
 
+	public WebRequest() {
+		this("");
+	}
+
+	public WebRequest(String uri) {
+		setUri(uri);
+		setMethod(RequestMethod.GET);
+		parameterMap = new HashMap<>();
+	}
+
 	public WebRequest(WebRequest request) {
 		this.parameterMap = request.parameterMap;
 		setUri(request.getUri());
@@ -29,7 +40,7 @@ public class WebRequest extends WebObject {
 	}
 
 	public WebRequest(InputStream inputStream) throws ProtocolException, IOException {
-		parameterMap = new HashMap<>();
+		this();
 		HttpStreamReader reader = new HttpStreamReader(inputStream);
 		String line = reader.readLine();
 		if (line == null || line.isEmpty())
@@ -86,6 +97,16 @@ public class WebRequest extends WebObject {
 	public void setMethod(@NotNull RequestMethod method) {
 		Assurance.assureNotNull(method);
 		this.method = method;
+	}
+
+	public WebResponse sendTo(String hostname, int port) throws ProtocolException, IOException {
+		try (Socket socket = new Socket(hostname, port)) {
+			return sendTo(socket);
+		}
+	}
+
+	public WebResponse sendTo(Socket socket) throws ProtocolException, IOException {
+		return sendTo(socket.getOutputStream(), socket.getInputStream());
 	}
 
 	public WebResponse sendTo(OutputStream outputStream, InputStream inputStream)
