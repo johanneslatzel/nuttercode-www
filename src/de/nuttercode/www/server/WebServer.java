@@ -64,14 +64,22 @@ public abstract class WebServer implements Closeable {
 				log("new socket: " + socket);
 			socket.setSoTimeout(socketTimeout);
 			WebRequest request = new WebRequest(socket.getInputStream());
+			if (verbose)
+				log(request.getMethod() + " " + request.getUri());
 			String reducedUri = request.getUri().substring(1);
 			WebResponse response;
 			int slashPosition = reducedUri.indexOf('/');
+			if (verbose)
+				log("reduced uri: " + reducedUri);
 			if (slashPosition != -1) {
 				WebModule module = findModule(reducedUri);
 				if (module == null) {
+					if (verbose)
+						log("answering directly");
 					response = WebResponse.from(ResponseCode.NOT_FOUND);
 				} else {
+					if (verbose)
+						log("forwarding to " + module.toString());
 					try (Socket forwardSocket = new Socket(InetAddress.getByName(module.getHostname()),
 							module.getPort())) {
 						forwardSocket.setSoTimeout(socketTimeout);
