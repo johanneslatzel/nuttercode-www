@@ -146,6 +146,10 @@ public class WebResponse extends WebObject {
 		outputStream.flush();
 	}
 
+	public boolean isOk() {
+		return statusCode == ResponseCode.OK.getCode();
+	}
+
 	@Override
 	public int hashCode() {
 		final int prime = 31;
