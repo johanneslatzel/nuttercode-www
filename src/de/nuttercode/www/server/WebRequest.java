@@ -17,22 +17,22 @@ import de.nuttercode.util.assurance.NotNull;
 public class WebRequest extends WebObject {
 
 	private RequestMethod method;
-	private String uri;
-	private final Map<String, String> parameterMap;
+	private String uriBase;
+	private final Map<String, String> uriParameterMap;
 
 	public WebRequest() {
 		this("/");
 	}
 
-	public WebRequest(String uri) {
-		setUri(uri);
+	public WebRequest(String uriBase) {
+		setUriBase(uriBase);
 		setMethod(RequestMethod.GET);
-		parameterMap = new HashMap<>();
+		uriParameterMap = new HashMap<>();
 	}
 
 	public WebRequest(WebRequest request) {
-		this.parameterMap = request.parameterMap;
-		setUri(request.getUri());
+		this.uriParameterMap = request.uriParameterMap;
+		setUriBase(request.getUri());
 		setMethod(request.getMethod());
 		for (String field : request.getHeaderFieldNames())
 			setHeaderField(field, request.getHeaderField(field));
@@ -49,7 +49,7 @@ public class WebRequest extends WebObject {
 		if (commandSplit.length != 3)
 			throw new ProtocolException("command line has the wrong format: " + line);
 		setMethod(RequestMethod.valueOf(commandSplit[0]));
-		setUri(commandSplit[1]);
+		setUriBase(commandSplit[1]);
 		if (!commandSplit[2].equals(WebServer.HTTP_VERSION))
 			throw new ProtocolException("wrong http version, expected: " + WebServer.HTTP_VERSION);
 		readHeader(reader);
@@ -59,35 +59,59 @@ public class WebRequest extends WebObject {
 	}
 
 	private void interpretUri() {
-		int paramStart = uri.indexOf("?");
+		int paramStart = uriBase.indexOf("?");
 		if (paramStart >= 0) {
-			for (String parameter : uri.substring(paramStart + 1).split("&")) {
+			for (String parameter : uriBase.substring(paramStart + 1).split("&")) {
 				int parameterDelim = parameter.indexOf("=");
 				if (parameterDelim > 0)
-					parameterMap.put(parameter.substring(0, parameterDelim), parameter.substring(parameterDelim + 1));
+					uriParameterMap.put(parameter.substring(0, parameterDelim),
+							parameter.substring(parameterDelim + 1));
 			}
+			uriBase = uriBase.substring(0, paramStart);
 		}
 	}
 
-	public boolean hasParameter(String name) {
-		return parameterMap.containsKey(name);
+	public boolean hasUriParameter(String name) {
+		return uriParameterMap.containsKey(name);
 	}
 
-	public String getParameter(String name) {
-		return parameterMap.get(name);
+	public String getUriParameter(String name) {
+		return uriParameterMap.get(name);
+	}
+
+	public void addUriParameter(String name, String value) {
+		if (value.contains("\n"))
+			throw new IllegalArgumentException("parameter value contains linefeed");
+
+		uriParameterMap.put(name, value);
 	}
 
 	public @NotEmpty String getUri() {
-		return uri;
+		StringBuilder uri = new StringBuilder();
+		uri.append(uriBase);
+		if (!uriParameterMap.isEmpty()) {
+			boolean isFirst = true;
+			uri.append('?');
+			for (String name : uriParameterMap.keySet()) {
+				if (isFirst)
+					isFirst = false;
+				else
+					uri.append('&');
+				uri.append(name);
+				uri.append('=');
+				uri.append(uriParameterMap.get(name));
+			}
+		}
+		return uri.toString();
 	}
 
 	public @NotNull String getReducedUri() {
-		return uri.substring(1);
+		return uriBase.substring(1);
 	}
 
-	public void setUri(@NotEmpty String uri) {
+	public void setUriBase(@NotEmpty String uri) {
 		Assurance.assureNotEmpty(uri);
-		this.uri = uri;
+		this.uriBase = uri;
 	}
 
 	public @NotNull RequestMethod getMethod() {
@@ -131,7 +155,7 @@ public class WebRequest extends WebObject {
 		final int prime = 31;
 		int result = super.hashCode();
 		result = prime * result + ((method == null) ? 0 : method.hashCode());
-		result = prime * result + ((uri == null) ? 0 : uri.hashCode());
+		result = prime * result + ((uriBase == null) ? 0 : uriBase.hashCode());
 		return result;
 	}
 
@@ -146,10 +170,10 @@ public class WebRequest extends WebObject {
 		WebRequest other = (WebRequest) obj;
 		if (method != other.method)
 			return false;
-		if (uri == null) {
-			if (other.uri != null)
+		if (uriBase == null) {
+			if (other.uriBase != null)
 				return false;
-		} else if (!uri.equals(other.uri))
+		} else if (!uriBase.equals(other.uriBase))
 			return false;
 		return true;
 	}
@@ -159,7 +183,7 @@ public class WebRequest extends WebObject {
 		StringBuilder builder = new StringBuilder();
 		builder.append(method);
 		builder.append(' ');
-		builder.append(uri);
+		builder.append(uriBase);
 		builder.append(' ');
 		builder.append(WebServer.HTTP_VERSION);
 		builder.append(WebServer.CRLF);

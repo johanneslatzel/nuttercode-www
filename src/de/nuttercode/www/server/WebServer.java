@@ -84,7 +84,7 @@ public abstract class WebServer implements Closeable {
 							module.getPort())) {
 						forwardSocket.setSoTimeout(socketTimeout);
 						WebRequest forwardRequest = new WebRequest(request);
-						forwardRequest.setUri(reducedUri.substring(slashPosition));
+						forwardRequest.setUriBase(reducedUri.substring(slashPosition));
 						response = forwardRequest.sendTo(forwardSocket.getOutputStream(),
 								forwardSocket.getInputStream());
 					} catch (IOException e) {
