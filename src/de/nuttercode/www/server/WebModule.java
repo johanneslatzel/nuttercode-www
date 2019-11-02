@@ -3,7 +3,7 @@ package de.nuttercode.www.server;
 import de.nuttercode.util.assurance.Assurance;
 import de.nuttercode.util.assurance.NotEmpty;
 
-public class WebModule {
+class WebModule {
 
 	private final String identification;
 	private final int port;
