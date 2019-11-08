@@ -183,7 +183,7 @@ public class WebRequest extends WebObject {
 		StringBuilder builder = new StringBuilder();
 		builder.append(method);
 		builder.append(' ');
-		builder.append(uriBase);
+		builder.append(getUri());
 		builder.append(' ');
 		builder.append(WebServer.HTTP_VERSION);
 		builder.append(WebServer.CRLF);
