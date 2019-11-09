@@ -42,6 +42,7 @@ public abstract class WebServer implements Closeable {
 	private final String hostname;
 	private BufferedWriter log;
 	private boolean devMode;
+	private boolean useModules;
 
 	public WebServer(String configurationFilePath, String hostname) {
 		this(new File(configurationFilePath), hostname);
@@ -58,6 +59,7 @@ public abstract class WebServer implements Closeable {
 		setVerbose(false);
 		log = null;
 		setDevMode(false);
+		setUseModules(true);
 	}
 
 	private void handleSocket(Socket socket) {
@@ -73,7 +75,7 @@ public abstract class WebServer implements Closeable {
 			int slashPosition = reducedUri.indexOf('/');
 			if (verbose)
 				log("reduced uri: " + reducedUri);
-			if (slashPosition != -1) {
+			if (slashPosition != -1 && isUseModules()) {
 				WebModule module = findModule(reducedUri);
 				if (module == null) {
 					if (verbose)
@@ -171,6 +173,15 @@ public abstract class WebServer implements Closeable {
 						throw new IllegalStateException(
 								"illegal port number in server segment: " + split[1] + " on line " + lineNumber, e);
 					}
+					break;
+				case "use_modules":
+					if (split[1].equals("no"))
+						setUseModules(false);
+					else if (split[1].equals("yes"))
+						setUseModules(true);
+					else
+						throw new IllegalStateException("wrong parameter for use_modules in server segment: " + split[1]
+								+ " on line " + lineNumber);
 					break;
 				default:
 					break;
@@ -270,6 +281,14 @@ public abstract class WebServer implements Closeable {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public boolean isUseModules() {
+		return useModules;
+	}
+
+	public void setUseModules(boolean useModules) {
+		this.useModules = useModules;
 	}
 
 	@Override
