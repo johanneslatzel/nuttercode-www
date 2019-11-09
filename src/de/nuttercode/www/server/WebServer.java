@@ -41,6 +41,7 @@ public abstract class WebServer implements Closeable {
 	private boolean verbose;
 	private final String hostname;
 	private BufferedWriter log;
+	private boolean devMode;
 
 	public WebServer(String configurationFilePath, String hostname) {
 		this(new File(configurationFilePath), hostname);
@@ -56,6 +57,7 @@ public abstract class WebServer implements Closeable {
 		socketTimeout = DEFAULT_SOCKET_TIMEOUT;
 		setVerbose(false);
 		log = null;
+		setDevMode(false);
 	}
 
 	private void handleSocket(Socket socket) {
@@ -241,6 +243,14 @@ public abstract class WebServer implements Closeable {
 
 	public void setVerbose(boolean verbose) {
 		this.verbose = verbose;
+	}
+
+	public boolean isDevMode() {
+		return devMode;
+	}
+
+	public void setDevMode(boolean devMode) {
+		this.devMode = devMode;
 	}
 
 	public void log(Exception e) {
