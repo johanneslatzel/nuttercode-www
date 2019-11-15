@@ -28,6 +28,22 @@ public class WebResponse extends WebObject {
 		return response;
 	}
 
+	/**
+	 * the same as {@link WebResponse#from(ResponseCode)} but with cats!
+	 * 
+	 * @param code
+	 * @return a response to an error with a cat!
+	 */
+	public static WebResponse cat(ResponseCode code) {
+		WebResponse response = WebResponse.from(code);
+		try {
+			response.setBody("<html><img src=\"https://http.cat/" + code.getCode() + "\" /></html>");
+		} catch (UnsupportedEncodingException e) {
+			throw new IllegalStateException(e);
+		}
+		return response;
+	}
+
 	private static final String DEFAULT_STATUS_REASON = "OK";
 	private static final int DEFAULT_STATUS_CODE = 200;
 	private static final String HF_EXPIRES = "Expires";
