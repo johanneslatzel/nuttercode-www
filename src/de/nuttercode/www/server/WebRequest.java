@@ -123,6 +123,10 @@ public class WebRequest extends WebObject {
 		this.method = method;
 	}
 
+	public WebResponse sendTo(String hostname) throws ProtocolException, IOException {
+		return sendTo(hostname, 80);
+	}
+
 	public WebResponse sendTo(String hostname, int port) throws ProtocolException, IOException {
 		try (Socket socket = new Socket(hostname, port)) {
 			return sendTo(socket);
