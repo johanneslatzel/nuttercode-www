@@ -24,8 +24,19 @@ The URI of the request will be constructed when sendTo is called and will be "/a
 
 ```java
 WebRequest request = new WebRequest("/api");
-request.setUriParameter("username", "admin");
-request.setUriParameter("token", "mycooltoken");
 WebResponse response = request.sendTo("SOME API HOST");
+System.out.println(response.toString());
+```
+
+
+## Example 4: WebRequest with POST request method and custom body
+
+The URI of the request will be constructed when sendTo is called and will be "/api&username=admin&token=mycooltoken".
+
+```java
+WebRequest request = new WebRequest("/api");
+request.setBody("{\"username\": \"admin\", \"content\": \"admins are cool\"}");
+request.setMethod(RequestMethod.POST);
+WebResponse response = request.sendTo("www.nuttercode.de");
 System.out.println(response.toString());
 ```
