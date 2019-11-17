@@ -9,6 +9,23 @@ WebRequest request = new WebRequest();
 WebResponse response = request.sendTo("www.google.de");
 System.out.println(response.toString());
 ```
+Output:
+
+```bash
+HTTP/1.1 200 OK
+X-Frame-Options: SAMEORIGIN
+Accept-Ranges: none
+Transfer-Encoding: chunked
+Cache-Control: private, max-age=0
+Server: gws
+Set-Cookie: NID=191=oTLmkVuki_dfCKva3aJHZUsRcDzBgTQaMN9VLVNzfAcGX0UiTYSdH5bNItkVRFz7hHCm_xU27FWxNvyAshsW2LvNTLQygYo40D6mB-nrrmSJLn8h8cKEnUKrgBPNtHWIF_SZcFzewYBY5dlkJbhNTl56jZ8JJXnL_jIIMozmK14; expires=Mon, 18-May-2020 15:21:18 GMT; path=/; domain=.google.de; HttpOnly
+Vary: Accept-Encoding
+Expires: -1
+P3P: CP="This is not a P3P policy! See g.co/p3phelp for more info."
+X-XSS-Protection: 0
+Date: Sun, 17 Nov 2019 15:21:18 GMT
+Content-Type: text/html; charset=ISO-8859-1
+```
 
 ## Example 2: WebRequest with URI in constructor
 
