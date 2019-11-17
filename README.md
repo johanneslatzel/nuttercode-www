@@ -18,7 +18,7 @@ WebResponse response = request.sendTo("www.nuttercode.de");
 System.out.println(response.toString());
 ```
 
-## Example 3: WebRequest with URI in constructor
+## Example 3: WebRequest with URI parameters
 
 The URI of the request will be constructed when sendTo is called and will be "/api&username=admin&token=mycooltoken".
 
