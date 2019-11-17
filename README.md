@@ -1,6 +1,6 @@
 # nuttercode-www
 
-this package contains a very basic, incomplete implementation of http. use instances of the class "WebRequest" to call an http server. extend the class "WebServer" to run a http server.
+This package contains a very basic, incomplete implementation of HTTP. Use instances of the class "WebRequest" to call n HTTP server. Extend the class "WebServer" to run a HTTP server.
 
 ## Example 1: WebRequest
 
