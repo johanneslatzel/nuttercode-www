@@ -28,10 +28,7 @@ WebResponse response = request.sendTo("SOME API HOST");
 System.out.println(response.toString());
 ```
 
-
 ## Example 4: WebRequest with POST request method and custom body
-
-The URI of the request will be constructed when sendTo is called and will be "/api&username=admin&token=mycooltoken".
 
 ```java
 WebRequest request = new WebRequest("/api");
@@ -39,4 +36,13 @@ request.setBody("{\"username\": \"admin\", \"content\": \"admins are cool\"}");
 request.setMethod(RequestMethod.POST);
 WebResponse response = request.sendTo("www.nuttercode.de");
 System.out.println(response.toString());
+```
+
+## Example 5: Run a WebServer instance
+
+Let "CoolServer" be a non-abstract class which extends "WebServer".
+
+```java
+CoolServer coolServer = new CoolServer();
+WebServer.run(coolServer);
 ```
