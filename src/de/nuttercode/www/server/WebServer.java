@@ -1,24 +1,17 @@
 package de.nuttercode.www.server;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.time.Instant;
-import java.util.HashMap;
-import java.util.Map;
 
-import de.nuttercode.util.StackTraceConverter;
+import de.nuttercode.log.Log;
+import de.nuttercode.log.LogException;
 import de.nuttercode.util.assurance.Assurance;
-import de.nuttercode.util.assurance.NotEmpty;
 import de.nuttercode.util.assurance.NotNull;
 
 public abstract class WebServer implements Closeable {
@@ -35,85 +28,40 @@ public abstract class WebServer implements Closeable {
 	}
 
 	private final File configurationFile;
-	private final Map<String, WebModule> modules;
 	private ListenerThread listenerThread;
 	private int socketTimeout;
-	private boolean verbose;
-	private final String hostname;
-	private BufferedWriter log;
+	private String hostname;
+	private Log log;
 	private boolean devMode;
 	private boolean useModules;
+	private String logDirectory;
 
-	public WebServer(String configurationFilePath, String hostname) {
-		this(new File(configurationFilePath), hostname);
+	public WebServer(String configurationFilePath) {
+		this(new File(configurationFilePath));
 	}
 
-	public WebServer(@NotNull File configurationFile, @NotEmpty String hostname) {
+	public WebServer(@NotNull File configurationFile) {
 		Assurance.assureNotNull(configurationFile);
-		Assurance.assureNotEmpty(hostname);
 		this.configurationFile = configurationFile;
-		this.hostname = hostname;
-		modules = new HashMap<>();
+		this.hostname = "unknown";
 		listenerThread = null;
 		socketTimeout = DEFAULT_SOCKET_TIMEOUT;
-		setVerbose(false);
 		log = null;
 		setDevMode(false);
 		setUseModules(true);
+		logDirectory = null;
 	}
 
 	private void handleSocket(Socket socket) {
 		try {
-			if (verbose)
-				log("new socket: " + socket);
 			socket.setSoTimeout(socketTimeout);
-			WebRequest request = new WebRequest(socket.getInputStream());
-			if (verbose)
-				log(request.getMethod() + " " + request.getUri());
-			String reducedUri = request.getUri().substring(1);
-			WebResponse response;
-			int slashPosition = reducedUri.indexOf('/');
-			if (verbose)
-				log("reduced uri: " + reducedUri);
-			if (slashPosition != -1 && isUseModules()) {
-				WebModule module = findModule(reducedUri);
-				if (module == null) {
-					if (verbose)
-						log("answering directly");
-					response = WebResponse.from(ResponseCode.NOT_FOUND);
-				} else {
-					if (verbose)
-						log("forwarding to " + module.toString());
-					try (Socket forwardSocket = new Socket(InetAddress.getByName(module.getHostname()),
-							module.getPort())) {
-						forwardSocket.setSoTimeout(socketTimeout);
-						WebRequest forwardRequest = new WebRequest(request);
-						forwardRequest.setUriBase(reducedUri.substring(slashPosition));
-						response = forwardRequest.sendTo(forwardSocket.getOutputStream(),
-								forwardSocket.getInputStream());
-					} catch (IOException e) {
-						response = WebResponse.from(ResponseCode.INTERNAL_SERVER_ERROR);
-						if (verbose)
-							log(e);
-					}
-				}
-			} else {
-				response = handleRequest(request);
-			}
+			WebResponse response = handleRequest(new WebRequest(socket.getInputStream()));
 			if (response == null)
 				response = WebResponse.from(ResponseCode.INTERNAL_SERVER_ERROR);
 			response.setHeaderField(HF_HOST, getHostname());
 			response.sendTo(socket.getOutputStream());
 		} catch (Exception e) {
-			if (verbose)
-				e.printStackTrace();
-		}
-	}
-
-	private WebModule findModule(String uri) {
-		String value = uri.split("/")[0];
-		synchronized (modules) {
-			return modules.get(value);
+			e.printStackTrace();
 		}
 	}
 
@@ -127,9 +75,6 @@ public abstract class WebServer implements Closeable {
 				switch (line) {
 				case "[server]":
 					readServerEntry(reader, lineNumber);
-					break;
-				case "[module]":
-					readModuleEntry(reader, lineNumber);
 					break;
 				default:
 					break;
@@ -158,13 +103,8 @@ public abstract class WebServer implements Closeable {
 								"illegal port number in server segment: " + split[1] + " on line " + lineNumber, e);
 					}
 					break;
-				case "log":
-					try {
-						log = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(split[1])));
-					} catch (NumberFormatException e) {
-						throw new IllegalStateException(
-								"illegal port number in server segment: " + split[1] + " on line " + lineNumber, e);
-					}
+				case "log_directory":
+					logDirectory = split[1];
 					break;
 				case "backlog":
 					try {
@@ -183,6 +123,9 @@ public abstract class WebServer implements Closeable {
 						throw new IllegalStateException("wrong parameter for use_modules in server segment: " + split[1]
 								+ " on line " + lineNumber);
 					break;
+				case "hostname":
+					setHostname(split[1]);
+					break;
 				default:
 					break;
 				}
@@ -190,54 +133,36 @@ public abstract class WebServer implements Closeable {
 		}
 	}
 
-	private void readModuleEntry(BufferedReader reader, int lineNumber) throws IOException {
-		String hostname = null;
-		String port = null;
-		String identification = null;
-		String line;
-		while ((line = reader.readLine()) != null) {
-			line = line.trim().toLowerCase();
-			lineNumber++;
-			if (line.equals("[/module]"))
-				break;
-			int colonPos = line.indexOf(':');
-			if (colonPos < 0)
-				continue;
-			if (colonPos == 0)
-				throw new IllegalStateException("no attribute name sipplied at line " + lineNumber);
-			if (colonPos == line.length())
-				throw new IllegalStateException("no attribute value supplied at line " + lineNumber);
-			String name = line.substring(0, colonPos).trim().toLowerCase();
-			String value = line.substring(colonPos + 1).trim().toLowerCase();
-			switch (name) {
-			case "port":
-				port = value;
-				break;
-			case "identification":
-				identification = value;
-				break;
-			case "hostname":
-				hostname = value;
-				break;
-			default:
-				break;
-			}
-		}
-		modules.put(identification, new WebModule(identification, hostname, port));
+	private void setHostname(String hostname) {
+		this.hostname = hostname;
 	}
 
 	protected abstract WebResponse handleRequest(WebRequest request);
 
-	public void start() throws UnknownHostException, IOException {
-		listenerThread.start();
-		log("listener thread started");
+	protected void onInit() {
 	}
 
+	public void start() throws UnknownHostException, IOException {
+		listenerThread.start();
+	}
+
+	/**
+	 * 
+	 * @throws IllegalArgumentException if the hostname in the config file has not
+	 *                                  been configured properly
+	 * @throws FileNotFoundException
+	 * @throws IOException
+	 */
 	public void init() throws FileNotFoundException, IOException {
 		close();
 		listenerThread = new ListenerThread(this::handleSocket);
 		readConfiguration();
-		log("initializaton done");
+		Assurance.assureNotEmpty(hostname);
+		if (logDirectory != null)
+			log = new Log(new File(logDirectory), hostname);
+		onInit();
+		if (log != null)
+			log.logInfo("WebServer started");
 	}
 
 	public int getSocketTimeout() {
@@ -248,14 +173,6 @@ public abstract class WebServer implements Closeable {
 		this.socketTimeout = socketTimeout;
 	}
 
-	public boolean isVerbose() {
-		return verbose;
-	}
-
-	public void setVerbose(boolean verbose) {
-		this.verbose = verbose;
-	}
-
 	public boolean isDevMode() {
 		return devMode;
 	}
@@ -264,23 +181,14 @@ public abstract class WebServer implements Closeable {
 		this.devMode = devMode;
 	}
 
-	public void log(Exception e) {
-		log(e.getMessage());
-		log(StackTraceConverter.getStackTrace(e.getStackTrace()));
+	public boolean hasLog() {
+		return log != null;
 	}
 
-	public void log(String message) {
-		if (log == null)
-			return;
-		try {
-			log.write(Instant.now().toString());
-			log.write(": ");
-			log.write(message);
-			log.write('\n');
-			log.flush();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+	public Log getLog() {
+		if (!hasLog())
+			throw new LogException("log has not been configured");
+		return log;
 	}
 
 	public boolean isUseModules() {
@@ -296,10 +204,8 @@ public abstract class WebServer implements Closeable {
 		if (listenerThread != null)
 			listenerThread.close();
 		if (log != null) {
-			log.flush();
 			log.close();
 		}
-		modules.clear();
 	}
 
 	public String getHostname() {
