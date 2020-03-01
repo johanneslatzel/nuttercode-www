@@ -57,6 +57,10 @@ abstract class WebObject {
 		return body;
 	}
 
+	public @NotNull String getBodyAsString() {
+		return new String(body);
+	}
+
 	public void setBody(@NotNull String body, @NotEmpty String charsetName) throws UnsupportedEncodingException {
 		Assurance.assureNotNull(body);
 		Assurance.assureNotEmpty(charsetName);
