@@ -33,7 +33,6 @@ public abstract class WebServer implements Closeable {
 	private String hostname;
 	private Log log;
 	private boolean devMode;
-	private boolean useModules;
 	private String logDirectory;
 
 	public WebServer(String configurationFilePath) {
@@ -48,7 +47,6 @@ public abstract class WebServer implements Closeable {
 		socketTimeout = DEFAULT_SOCKET_TIMEOUT;
 		log = null;
 		setDevMode(false);
-		setUseModules(true);
 		logDirectory = null;
 	}
 
@@ -113,15 +111,6 @@ public abstract class WebServer implements Closeable {
 						throw new IllegalStateException(
 								"illegal port number in server segment: " + split[1] + " on line " + lineNumber, e);
 					}
-					break;
-				case "use_modules":
-					if (split[1].equals("no"))
-						setUseModules(false);
-					else if (split[1].equals("yes"))
-						setUseModules(true);
-					else
-						throw new IllegalStateException("wrong parameter for use_modules in server segment: " + split[1]
-								+ " on line " + lineNumber);
 					break;
 				case "hostname":
 					setHostname(split[1]);
@@ -189,14 +178,6 @@ public abstract class WebServer implements Closeable {
 		if (!hasLog())
 			throw new LogException("log has not been configured");
 		return log;
-	}
-
-	public boolean isUseModules() {
-		return useModules;
-	}
-
-	public void setUseModules(boolean useModules) {
-		this.useModules = useModules;
 	}
 
 	@Override
