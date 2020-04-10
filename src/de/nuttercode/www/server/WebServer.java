@@ -14,7 +14,7 @@ import de.nuttercode.log.LogException;
 import de.nuttercode.util.assurance.Assurance;
 import de.nuttercode.util.assurance.NotNull;
 
-public abstract class WebServer implements Closeable {
+public abstract class WebServer implements Closeable, WebRequestHandler {
 
 	final static String CRLF = "\r\n";
 	final static String HTTP_VERSION = "HTTP/1.1";
@@ -34,10 +34,6 @@ public abstract class WebServer implements Closeable {
 	private Log log;
 	private boolean devMode;
 	private String logDirectory;
-
-	public WebServer(String configurationFilePath) {
-		this(new File(configurationFilePath));
-	}
 
 	public WebServer(@NotNull File configurationFile) {
 		Assurance.assureNotNull(configurationFile);
@@ -125,8 +121,6 @@ public abstract class WebServer implements Closeable {
 	private void setHostname(String hostname) {
 		this.hostname = hostname;
 	}
-
-	protected abstract WebResponse handleRequest(WebRequest request);
 
 	protected void onInit() {
 	}
