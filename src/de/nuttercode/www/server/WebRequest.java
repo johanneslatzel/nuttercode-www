@@ -75,8 +75,9 @@ public class WebRequest extends WebObject {
 		return uriParameterMap.containsKey(name);
 	}
 
-	public String getUriParameter(String name) {
-		return uriParameterMap.get(name);
+	public @NotNull String getUriParameter(String name) {
+		String value = uriParameterMap.get(name);
+		return value != null ? value : "";
 	}
 
 	public void addUriParameter(String name, String value) {
