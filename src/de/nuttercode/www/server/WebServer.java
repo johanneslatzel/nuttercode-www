@@ -8,6 +8,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Map;
 
 import de.nuttercode.log.Log;
 import de.nuttercode.log.LogException;
@@ -34,6 +36,7 @@ public abstract class WebServer implements Closeable, WebRequestHandler {
 	private Log log;
 	private boolean devMode;
 	private String logDirectory;
+	private final Map<String, String> configuration;
 
 	public WebServer(@NotNull File configurationFile) {
 		Assurance.assureNotNull(configurationFile);
@@ -44,6 +47,7 @@ public abstract class WebServer implements Closeable, WebRequestHandler {
 		log = null;
 		setDevMode(false);
 		logDirectory = null;
+		configuration = new HashMap<>();
 	}
 
 	private void handleSocket(Socket socket) {
@@ -88,6 +92,7 @@ public abstract class WebServer implements Closeable, WebRequestHandler {
 			if (split.length == 2) {
 				split[0] = split[0].trim().toLowerCase();
 				split[1] = split[1].trim().toLowerCase();
+				configuration.put(split[0], split[1]);
 				switch (split[0]) {
 				case "port":
 					try {
@@ -174,6 +179,15 @@ public abstract class WebServer implements Closeable, WebRequestHandler {
 		return log;
 	}
 
+	public String getHostname() {
+		return hostname;
+	}
+
+	public String getConfiguration(String name) {
+		String value = configuration.get(name);
+		return value != null ? value : "";
+	}
+
 	@Override
 	public void close() throws IOException {
 		if (listenerThread != null)
@@ -181,10 +195,6 @@ public abstract class WebServer implements Closeable, WebRequestHandler {
 		if (log != null) {
 			log.close();
 		}
-	}
-
-	public String getHostname() {
-		return hostname;
 	}
 
 }
